@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mandir Emporium</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  STEP 1 — JSONBin.io (free cloud storage)               ║
+// ║  1. Go to https://jsonbin.io and sign up                 ║
+// ║  2. Click "Create Bin", paste {} and save                ║
+// ║  3. Copy the Bin ID from the URL                         ║
+// ║  4. Go to API Keys → copy your Master Key                ║
+// ╠══════════════════════════════════════════════════════════╣
+// ║  STEP 2 — Cloudinary (free image hosting)                ║
+// ║  1. Go to https://cloudinary.com and sign up             ║
+// ║  2. Dashboard → copy your Cloud Name                     ║
+// ║  3. Settings → Upload → Add upload preset → Unsigned     ║
+// ║  4. Copy the Upload Preset name                          ║
+// ╚══════════════════════════════════════════════════════════╝
+
+const CONFIG = {
+  JSONBIN_BIN_ID:           "699fde6243b1c97be99f2c38",
+  JSONBIN_API_KEY:          "$2a$10$9eODiMmNb27x8Nvpon.ITu9dj8lGX9TEV8IncxAKDDbDRABhso5HW",
+  CLOUDINARY_CLOUD_NAME:    "dj1pnnnrf",
+  CLOUDINARY_UPLOAD_PRESET: "Mandir",
+};
+
+const CLOUD_OK = CONFIG.JSONBIN_BIN_ID !== "YOUR_BIN_ID_HERE";
+const CDN_OK   = CONFIG.CLOUDINARY_CLOUD_NAME !== "YOUR_CLOUD_NAME_HERE";
+
+async function cloudLoad() {
+  if (!CLOUD_OK) return null;
+  try {
+    const r = await fetch(
+      `https://api.jsonbin.io/v3/b/${CONFIG.JSONBIN_BIN_ID}/latest`,
+      { headers: { "X-Master-Key": CONFIG.JSONBIN_API_KEY } }
+    );
+    if (!r.ok) return null;
+    const d = await r.json();
+    return d.record && d.record.brandName ? d.record : null;
+  } catch { return null; }
+}
+
+async function cloudSave(data) {
+  if (!CLOUD_OK) throw new Error("not configured");
+  const r = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.JSONBIN_BIN_ID}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", "X-Master-Key": CONFIG.JSONBIN_API_KEY },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error("save failed");
+}
+
+async function cdnUpload(file) {
+  if (!CDN_OK) throw new Error("cloudinary not configured");
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("upload_preset", CONFIG.CLOUDINARY_UPLOAD_PRESET);
+  const r = await fetch(
+    `https://api.cloudinary.com/v1_1/${CONFIG.CLOUDINARY_CLOUD_NAME}/image/upload`,
+    { method: "POST", body: fd }
+  );
+  if (!r.ok) throw new Error("upload failed");
+  const d = await r.json();
+  return d.secure_url;
+}
+
+const DEF = {
+  brandName:"Mandir Emporium", logoImage:"",
+  tagline:"Divine Craftsmanship. Timeless Elegance.",
+  subTagline:"India's Premier Destination for Sacred Mandirs & Pooja Room Interiors",
+  heroBtnLabel:"Explore Collections",
+  phone:"+91 98765 43210", whatsapp:"919876543210",
+  email:"info@mandiremporium.com", address:"123, Sacred Street, New Delhi – 110001",
+  instagram:"https://instagram.com", facebook:"https://facebook.com",
+  youtube:"https://youtube.com",    pinterest:"https://pinterest.com",
+  favicon:"", footerText:"A Unit of The Deco Furns. All Rights Reserved.",
+  navItems:[
+    {key:"home",label:"Home"},{key:"collections",label:"Collections"},
+    {key:"pooja",label:"Pooja Rooms"},{key:"projects",label:"Projects"},
+    {key:"about",label:"About Us"},{key:"contact",label:"Contact"},
+  ],
+  heroImage:"https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=1800&q=80",
+  aboutTitle:"Crafting Divinity Since 1954", aboutSubtitle:"Our Legacy",
+  aboutText:"At Mandir Emporium, we merge centuries-old sacred craftsmanship with contemporary luxury design. Every mandir is a masterpiece — a sanctuary where devotion meets unparalleled artistry.",
+  aboutImage:"https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=900&q=80",
+  aboutStoryTitle:"Our Story",
+  aboutStoryText:"Founded in 1954 by a family of master craftsmen in New Delhi, Mandir Emporium began as a small workshop dedicated to creating sacred spaces of unrivalled beauty. Over seven decades, we have grown into India's most trusted name in luxury mandir craftsmanship.",
+  aboutStoryImage:"https://images.unsplash.com/photo-1600607687644-aac4c3eac7f4?w=900&q=80",
+  aboutMission:"To craft sacred spaces of extraordinary beauty that inspire devotion and stand as timeless heirlooms for generations.",
+  aboutVision:"To be the most trusted and admired name in sacred interior design across India and beyond.",
+  aboutGallery:[
+    "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&q=80",
+    "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600&q=80",
+    "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?w=600&q=80",
+  ],
+  products:[
+    {id:1,name:"Corian Marble Mandir",subtitle:"Pure Elegance in White",desc:"Crafted from premium Corian — seamless, non-porous engineered stone with intricate laser-cut latticework.",image:"https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800&q=80",tag:"Best Seller"},
+    {id:2,name:"Vietnam Marble Mandir",subtitle:"Exotic Stone. Divine Form.",desc:"Sourced from Vietnam quarries, this ultra-premium marble bears unique veining and luminous depth.",image:"https://images.unsplash.com/photo-1600607687644-aac4c3eac7f4?w=800&q=80",tag:"Signature"},
+    {id:3,name:"Sagwan Wood Mandir",subtitle:"Timeless Teak. Sacred Heritage.",desc:"Hand-carved from the finest Sagwan teak, embodying India's royal woodworking heritage.",image:"https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&q=80",tag:"Heritage"},
+    {id:4,name:"HDF Board Mandir",subtitle:"Modern Precision. Sacred Beauty.",desc:"Engineered with High Density Fibreboard and premium laminates for contemporary silhouettes.",image:"https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80",tag:"Modern"},
+  ],
+  poojaTitle:"Complete Pooja Room Setup",
+  poojaSubtitle:"We design and install your complete sacred space — from concept to consecration.",
+  poojaText:"Our interior pooja room design service transforms an ordinary space into a divine retreat. We handle architecture, installation, lighting, storage, flooring, and decor.",
+  poojaFeatures:["Custom Architectural Design","Premium Material Selection","Mandir Installation","Divine Lighting Setup","Sanctified Storage Solutions","Complete Turnkey Delivery"],
+  poojaImage:"https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=900&q=80",
+  projectsTitle:"Our Signature Projects",
+  projectsSubtitle:"A glimpse into the sacred spaces we have brought to life across India.",
+  projects:[
+    {id:1,title:"Grand Marble Pooja Hall",category:"Vietnam Marble",location:"Delhi",year:"2023",description:"A breathtaking full-room pooja hall featuring hand-selected Vietnam marble with rare gold veining. 400 sq ft sacred space with custom lighting and a triple-arch mandir.",images:["https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=900&q=80","https://images.unsplash.com/photo-1598928506311-c55ded91a20c?w=900&q=80"]},
+    {id:2,title:"Royal Teak Mandir",category:"Sagwan Wood",location:"Mumbai",year:"2023",description:"A majestic Sagwan teak mandir for a sprawling Juhu villa. Hand-carved by master craftsmen over three months with gold leaf detailing.",images:["https://images.unsplash.com/photo-1598928506311-c55ded91a20c?w=900&q=80","https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=900&q=80"]},
+    {id:3,title:"Corian Luxury Shrine",category:"Corian Marble",location:"Bangalore",year:"2022",description:"A contemporary Corian mandir for a modern penthouse with precision-cut jali work, integrated LED lighting, and seamless storage panels.",images:["https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=900&q=80","https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=900&q=80"]},
+    {id:4,title:"Modern HDF Pooja Room",category:"HDF Board",location:"Hyderabad",year:"2022",description:"A sleek modern pooja alcove for a compact apartment with concealed lighting and foldable doors.",images:["https://images.unsplash.com/photo-1600585154363-67eb9e2e2099?w=900&q=80","https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=900&q=80"]},
+    {id:5,title:"Heritage Teak Temple",category:"Sagwan Wood",location:"Jaipur",year:"2021",description:"A palatial home temple inspired by Rajasthani architecture with towering teak arches and hand-painted murals.",images:["https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=900&q=80","https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=900&q=80"]},
+    {id:6,title:"Marble Pooja Suite",category:"Vietnam Marble",location:"Ahmedabad",year:"2021",description:"A luxurious dedicated pooja suite with book-matched Vietnam marble panels and a custom 7-foot mandir.",images:["https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=900&q=80","https://images.unsplash.com/photo-1600607687644-aac4c3eac7f4?w=900&q=80"]},
+  ],
+  whyPoints:[
+    {icon:"✦",title:"70+ Years of Heritage",desc:"Seven decades of crafting sacred spaces for discerning families across India."},
+    {icon:"✦",title:"Master Artisans",desc:"100+ skilled craftsmen dedicated to divine perfection in every piece."},
+    {icon:"✦",title:"Premium Materials Only",desc:"We source only the finest marble, wood, and engineered materials worldwide."},
+    {icon:"✦",title:"Turnkey Delivery",desc:"From design to installation — completely managed by our expert team."},
+    {icon:"✦",title:"Pan-India Service",desc:"We deliver and install across all major Indian cities and beyond."},
+    {icon:"✦",title:"Custom Design Studio",desc:"Every piece is uniquely designed for your space and personal vision."},
+  ],
+};
+
+// ── STYLES ────────────────────────────────────────────────────
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body,#root{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;background:#fff;color:#0a0a0a;overflow-x:hidden;min-height:100vh}
+:root{--black:#0a0a0a;--gold:#C9A84C;--gold-l:#E8D5A3;--gold-d:#9A6F2F;--grey:#f5f5f5;--grey2:#e8e8e8;--muted:#666;--nav-h:72px;--serif:'Cormorant Garamond',Georgia,serif}
+.serif{font-family:var(--serif)}
+/* NAV */
+.nav{position:fixed;top:0;left:0;right:0;z-index:900;height:var(--nav-h);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 clamp(1rem,4vw,4rem);background:rgba(255,255,255,.96);backdrop-filter:blur(20px);border-bottom:1px solid rgba(201,168,76,.2);transition:box-shadow .3s}
+.nav.sc{box-shadow:0 2px 30px rgba(0,0,0,.07)}
+.nav-l{display:flex;align-items:center}
+.nav-c{display:flex;justify-content:center}
+.nav-r{display:flex;align-items:center;justify-content:flex-end}
+.brand{display:flex;flex-direction:column;align-items:center;text-decoration:none;color:var(--black)}
+.brand-logo{height:44px;width:auto;max-width:180px;object-fit:contain}
+.brand-name{font-family:var(--serif);font-size:clamp(1.05rem,2.2vw,1.45rem);font-weight:600;letter-spacing:.03em;white-space:nowrap}
+.brand-sub{font-size:clamp(.42rem,.9vw,.52rem);letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-top:3px;white-space:nowrap}
+.nav-links{display:flex;align-items:center;gap:clamp(1rem,2vw,2.2rem)}
+.nav-links a{text-decoration:none;color:var(--black);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;font-weight:400;position:relative;transition:color .2s;white-space:nowrap}
+.nav-links a::after{content:'';position:absolute;bottom:-4px;left:0;right:0;height:1px;background:var(--gold);transform:scaleX(0);transition:transform .3s;transform-origin:left}
+.nav-links a:hover,.nav-links a.act{color:var(--gold)}
+.nav-links a.act::after,.nav-links a:hover::after{transform:scaleX(1)}
+.nav-cta{background:var(--black)!important;color:#fff!important;padding:.55rem 1.3rem!important;font-size:.62rem!important}
+.nav-cta::after{display:none!important}
+.nav-cta:hover{background:var(--gold)!important}
+.hbg{display:flex;flex-direction:column;gap:5px;width:36px;height:36px;cursor:pointer;background:none;border:none;padding:4px}
+.hbg span{display:block;height:2px;background:var(--black);border-radius:2px;transition:all .3s}
+.hbg.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.hbg.open span:nth-child(2){opacity:0}
+.hbg.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+/* SIDEBAR */
+.sb-ov{display:none;position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
+.sb-ov.open{display:block}
+.sb{position:fixed;top:0;left:0;bottom:0;z-index:850;width:min(80vw,300px);background:#fff;display:flex;flex-direction:column;transform:translateX(-100%);transition:transform .35s cubic-bezier(.25,.46,.45,.94);box-shadow:4px 0 40px rgba(0,0,0,.15)}
+.sb.open{transform:translateX(0)}
+.sb-hd{display:flex;align-items:center;justify-content:space-between;padding:1.2rem;background:var(--black)}
+.sb-brand{font-family:var(--serif);font-size:1.2rem;font-weight:600;color:#fff}
+.sb-sub{font-size:.48rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-top:2px}
+.sb-x{width:32px;height:32px;background:rgba(255,255,255,.1);border:none;border-radius:6px;cursor:pointer;color:#fff;font-size:1rem;display:flex;align-items:center;justify-content:center}
+.sb-nav{flex:1;overflow-y:auto;padding:.75rem}
+.sb-nav a{display:flex;align-items:center;gap:.75rem;padding:.85rem 1rem;text-decoration:none;color:var(--black);font-size:.82rem;font-weight:500;border-radius:8px;transition:background .15s;margin-bottom:.2rem}
+.sb-nav a:hover,.sb-nav a.act{background:#fdf8f0;color:var(--gold-d)}
+.sb-ic{width:18px;height:18px;opacity:.6;flex-shrink:0}
+.sb-div{height:1px;background:var(--grey2);margin:.5rem .75rem}
+.sb-ft{padding:1rem 1.2rem;border-top:1px solid var(--grey2)}
+.sb-btn{display:flex;align-items:center;justify-content:center;gap:.5rem;width:100%;padding:.75rem;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;font-weight:600;text-decoration:none;margin-top:.5rem}
+/* HERO */
+.hero{height:100svh;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.hero-bg{position:absolute;inset:0;background-size:cover;background-position:center;filter:brightness(.42)}
+.hero-ov{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05) 0%,rgba(0,0,0,.55) 100%)}
+.hero-ct{position:relative;text-align:center;color:#fff;padding:0 clamp(1rem,5vw,3rem);max-width:900px;animation:fadeInUp 1.2s ease both}
+.hero-ey{font-size:clamp(.52rem,1.5vw,.65rem);letter-spacing:.4em;text-transform:uppercase;color:var(--gold-l);margin-bottom:1.2rem}
+.hero-h{font-family:var(--serif);font-size:clamp(2rem,7vw,5.5rem);font-weight:300;line-height:1.1;margin-bottom:1.2rem}
+.hero-h em{font-style:italic;color:var(--gold-l)}
+.hero-s{font-size:clamp(.62rem,1.8vw,.8rem);letter-spacing:.18em;text-transform:uppercase;opacity:.75;margin-bottom:2.5rem}
+.hero-btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+.btn-g{display:inline-flex;align-items:center;gap:.5rem;background:var(--gold);color:#fff;padding:clamp(.7rem,2vw,.9rem) clamp(1.4rem,4vw,2.2rem);font-size:clamp(.58rem,1.4vw,.68rem);letter-spacing:.18em;text-transform:uppercase;border:none;cursor:pointer;transition:background .3s;text-decoration:none;font-weight:500}
+.btn-g:hover{background:#b8922e}
+.btn-o{display:inline-flex;align-items:center;gap:.5rem;background:transparent;color:#fff;padding:clamp(.7rem,2vw,.9rem) clamp(1.4rem,4vw,2.2rem);font-size:clamp(.58rem,1.4vw,.68rem);letter-spacing:.18em;text-transform:uppercase;border:1px solid rgba(255,255,255,.5);cursor:pointer;transition:all .3s;text-decoration:none}
+.btn-o:hover{border-color:#fff;background:rgba(255,255,255,.1)}
+.scroll-hint{position:absolute;bottom:1.5rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.4rem;color:rgba(255,255,255,.5);font-size:.52rem;letter-spacing:.3em;text-transform:uppercase;animation:bounce 2s ease infinite}
+.scroll-line{width:1px;height:36px;background:linear-gradient(to bottom,transparent,rgba(255,255,255,.45))}
+/* GENERAL */
+section{padding:clamp(3.5rem,8vw,7rem) 0}
+.ct{max-width:1300px;margin:0 auto;padding:0 clamp(1rem,5vw,4rem)}
+.sl{font-size:clamp(.5rem,1.2vw,.6rem);letter-spacing:.4em;text-transform:uppercase;color:var(--gold);margin-bottom:.8rem}
+.sh{font-family:var(--serif);font-size:clamp(1.6rem,4vw,3.2rem);font-weight:300;line-height:1.2;margin-bottom:1rem}
+.sh em{font-style:italic}
+.sdiv{width:50px;height:1px;background:var(--gold);margin:1.2rem 0}
+.sp{font-size:clamp(.78rem,1.8vw,.85rem);color:var(--muted);line-height:1.8;max-width:600px;font-weight:300}
+.cx{text-align:center}.cx .sdiv{margin:1.2rem auto}.cx .sp{margin:0 auto}
+/* HERITAGE STRIP */
+.hs{background:var(--black);color:#fff;padding:clamp(.8rem,2vw,1.2rem) clamp(1rem,5vw,4rem);display:flex;align-items:center;justify-content:center;gap:clamp(1rem,3vw,2.5rem);flex-wrap:wrap;border-bottom:1px solid rgba(201,168,76,.25)}
+.hs-dv{width:1px;height:28px;background:rgba(201,168,76,.25)}
+.hs-it{display:flex;flex-direction:column;align-items:center}
+.hs-l{font-size:.5rem;letter-spacing:.35em;text-transform:uppercase;color:var(--gold-l);margin-bottom:.2rem}
+.hs-v{font-family:var(--serif);font-size:clamp(.9rem,2.5vw,1.1rem);font-weight:300}
+.hs-tg{font-size:clamp(.65rem,1.5vw,.72rem);color:rgba(255,255,255,.6);max-width:520px;line-height:1.65;text-align:center}
+.hs-tg em{color:var(--gold-l);font-style:italic;font-family:var(--serif);font-size:1.1em}
+/* ABOUT */
+.ab-g{display:grid;grid-template-columns:1fr 1fr;gap:clamp(2rem,6vw,6rem);align-items:center}
+.ab-img{position:relative;aspect-ratio:3/4;overflow:hidden}
+.ab-img img{width:100%;height:100%;object-fit:cover;transition:transform .8s}
+.ab-img:hover img{transform:scale(1.04)}
+.ab-acc{position:absolute;bottom:-16px;right:-16px;width:100px;height:100px;border:1px solid var(--gold);z-index:-1}
+.ab-tag{position:absolute;bottom:1.2rem;left:1.2rem;background:var(--black);color:#fff;padding:.6rem 1rem;font-size:.55rem;letter-spacing:.22em;text-transform:uppercase}
+.stats{display:flex;gap:clamp(1.5rem,4vw,3rem);margin-top:2.5rem;border-top:1px solid var(--grey2);padding-top:2rem;flex-wrap:wrap}
+.st-n{font-family:var(--serif);font-size:clamp(2rem,5vw,2.8rem);font-weight:300;color:var(--gold);line-height:1}
+.st-l{font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:.3rem}
+.story-g{display:grid;grid-template-columns:1fr 1fr;gap:clamp(2rem,6vw,6rem);align-items:center;margin-top:5rem}
+.story-img{border-radius:2px;overflow:hidden;aspect-ratio:4/3}
+.story-img img{width:100%;height:100%;object-fit:cover}
+.mv-g{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:4rem}
+.mv-c{background:var(--grey);padding:clamp(1.5rem,3vw,2.5rem);border-left:3px solid var(--gold)}
+.mv-l{font-size:.55rem;letter-spacing:.35em;text-transform:uppercase;color:var(--gold);margin-bottom:.75rem}
+.mv-t{font-family:var(--serif);font-size:clamp(1rem,2vw,1.2rem);font-weight:300;line-height:1.7;font-style:italic}
+.gal-g{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:2rem}
+.gal-i{aspect-ratio:1;overflow:hidden;border-radius:2px}
+.gal-i img{width:100%;height:100%;object-fit:cover;transition:transform .5s}
+.gal-i:hover img{transform:scale(1.06)}
+/* PRODUCTS */
+.pd-bg{background:var(--grey)}
+.pd-g{display:grid;grid-template-columns:repeat(2,1fr);gap:2px;margin-top:3rem}
+.pd-c{position:relative;overflow:hidden;aspect-ratio:4/3;cursor:pointer;background:var(--grey2)}
+.pd-c img{width:100%;height:100%;object-fit:cover;transition:transform .7s,filter .5s;filter:brightness(.72)}
+.pd-c:hover img{transform:scale(1.06);filter:brightness(.45)}
+.pd-badge{position:absolute;top:1rem;left:1rem;background:var(--gold);color:#fff;font-size:.52rem;letter-spacing:.22em;text-transform:uppercase;padding:.28rem .7rem}
+.pd-info{position:absolute;bottom:0;left:0;right:0;padding:1.5rem;background:linear-gradient(to top,rgba(0,0,0,.92) 0%,transparent 100%);color:#fff;transform:translateY(55px);transition:transform .4s}
+.pd-c:hover .pd-info{transform:translateY(0)}
+.pd-sub{font-size:.55rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold-l);margin-bottom:.4rem}
+.pd-nm{font-family:var(--serif);font-size:clamp(1.1rem,2.5vw,1.6rem);font-weight:300;margin-bottom:.6rem}
+.pd-dc{font-size:.72rem;line-height:1.7;opacity:.85}
+.pd-cta{margin-top:.8rem;font-size:.58rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold-l)}
+/* POOJA */
+.pj-sp{display:grid;grid-template-columns:1fr 1fr}
+.pj-img{position:relative;overflow:hidden;min-height:clamp(300px,50vw,600px)}
+.pj-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pj-ct{background:var(--black);color:#fff;padding:clamp(2.5rem,6vw,5rem) clamp(1.5rem,5vw,4rem);display:flex;flex-direction:column;justify-content:center}
+.pj-ct .sp{color:rgba(255,255,255,.65);max-width:100%}
+.pj-fs{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin:1.8rem 0}
+.pj-f{display:flex;align-items:flex-start;gap:.6rem;font-size:.72rem;color:rgba(255,255,255,.8)}
+.pj-dot{width:5px;height:5px;background:var(--gold);border-radius:50%;margin-top:.3rem;flex-shrink:0}
+/* PROJECTS */
+.pr-g{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(.75rem,2vw,1.5rem);margin-top:3rem}
+.pr-c{position:relative;overflow:hidden;aspect-ratio:4/3;cursor:pointer;background:var(--grey2);border-radius:2px}
+.pr-c img{width:100%;height:100%;object-fit:cover;transition:transform .6s;filter:brightness(.82)}
+.pr-c:hover img{transform:scale(1.07);filter:brightness(.5)}
+.pr-ov{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:1.2rem;background:linear-gradient(to top,rgba(0,0,0,.85) 0%,transparent 60%);color:#fff}
+.pr-cat{font-size:.52rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold-l);margin-bottom:.3rem}
+.pr-nm{font-family:var(--serif);font-size:clamp(.9rem,2vw,1.2rem);font-weight:300}
+.pr-loc{font-size:.58rem;color:rgba(255,255,255,.65);margin-top:.2rem}
+.pr-vw{margin-top:.6rem;font-size:.55rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-l);opacity:0;transform:translateY(6px);transition:all .3s}
+.pr-c:hover .pr-vw{opacity:1;transform:translateY(0)}
+/* PROJECT DETAIL */
+.pd-pg{padding:3rem 0 5rem}
+.pd-bk{display:inline-flex;align-items:center;gap:.5rem;color:var(--gold-d);font-size:.68rem;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;border:none;background:none;margin-bottom:2rem}
+.pd-cat{font-size:.58rem;letter-spacing:.35em;text-transform:uppercase;color:var(--gold);margin-bottom:.6rem}
+.pd-h{font-family:var(--serif);font-size:clamp(2rem,5vw,3.5rem);font-weight:300;line-height:1.15;margin-bottom:.75rem}
+.pd-meta{display:flex;gap:2rem;flex-wrap:wrap}
+.pd-mi{font-size:.68rem;color:var(--muted)}
+.pd-mi strong{color:var(--black);font-weight:600}
+.pd-gal{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:2rem 0 3rem}
+.pd-main{grid-column:1/-1;aspect-ratio:16/7;overflow:hidden;border-radius:2px}
+.pd-main img{width:100%;height:100%;object-fit:cover}
+.pd-th{aspect-ratio:4/3;overflow:hidden;border-radius:2px}
+.pd-th img{width:100%;height:100%;object-fit:cover}
+.pd-body{display:grid;grid-template-columns:2fr 1fr;gap:3rem}
+.pd-desc{font-size:clamp(.85rem,1.8vw,.95rem);line-height:1.9;color:#444}
+.pd-sl{font-size:.58rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:.5rem;margin-top:1.5rem}
+.pd-sl:first-child{margin-top:0}
+.pd-sv{font-size:.82rem;font-weight:500}
+/* WHY */
+.wy-bg{background:var(--grey)}
+.wy-g{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(1rem,3vw,2.5rem);margin-top:3rem}
+.wy-c{padding:clamp(1.5rem,3vw,2.5rem);background:#fff;border:1px solid var(--grey2);transition:box-shadow .3s,border-color .3s}
+.wy-c:hover{box-shadow:0 6px 30px rgba(0,0,0,.07);border-color:var(--gold-l)}
+.wy-ic{font-size:1.1rem;color:var(--gold);margin-bottom:.8rem}
+.wy-t{font-weight:600;font-size:clamp(.8rem,1.5vw,.9rem);margin-bottom:.5rem}
+.wy-d{font-size:.75rem;color:var(--muted);line-height:1.7}
+/* CONTACT */
+.cn-bg{background:var(--black);color:#fff}
+.cn-g{display:grid;grid-template-columns:1fr 1fr;gap:clamp(2rem,6vw,6rem)}
+.cn-g .sp{color:rgba(255,255,255,.6);max-width:100%}
+.cn-items{margin-top:2rem;display:flex;flex-direction:column;gap:1.2rem}
+.cn-it{display:flex;align-items:flex-start;gap:.9rem}
+.cn-ic{width:38px;height:38px;border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--gold)}
+.cn-il{font-size:.52rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold-l);margin-bottom:.25rem}
+.cn-iv{font-size:clamp(.82rem,1.8vw,.9rem);font-weight:300}
+.cn-iv a{color:#fff;text-decoration:none}
+.cn-iv a:hover{color:var(--gold-l)}
+.socials{display:flex;gap:.75rem;margin-top:2rem;flex-wrap:wrap}
+.soc{width:40px;height:40px;border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#fff;text-decoration:none;font-size:.7rem;font-weight:600;transition:all .3s}
+.soc:hover{border-color:var(--gold);background:var(--gold)}
+.wa-btn{display:inline-flex;align-items:center;gap:.7rem;background:#25D366;color:#fff;padding:.8rem 1.6rem;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;transition:background .3s;margin-top:1.5rem}
+.wa-btn:hover{background:#1da851}
+/* FORM */
+.fh{font-family:var(--serif);font-size:clamp(1.4rem,3vw,1.8rem);font-weight:300;color:#fff;margin-bottom:1.5rem}
+.fg{margin-bottom:1rem}
+.fg label{display:block;font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:.4rem}
+.fg input,.fg select,.fg textarea{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#fff;padding:.75rem .9rem;font-size:.8rem;outline:none;transition:border-color .2s;font-family:inherit}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--gold)}
+.fg select option{background:#1a1a1a}
+.fg textarea{height:90px;resize:vertical}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.fsub{width:100%;background:var(--gold);color:#fff;border:none;padding:.9rem;font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;transition:background .3s;margin-top:.4rem;font-family:inherit}
+.fsub:hover{background:#b8922e}
+.fok{text-align:center;padding:2rem;color:var(--gold-l);font-family:var(--serif);font-size:1.2rem}
+/* PAGE HERO */
+.page{padding-top:var(--nav-h);min-height:100vh}
+.ph{height:clamp(200px,35vw,380px);position:relative;display:flex;align-items:flex-end;overflow:hidden}
+.ph-bg{position:absolute;inset:0;background-size:cover;background-position:center;filter:brightness(.4)}
+.ph-ov{position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(0,0,0,.7) 100%)}
+.ph-ct{position:relative;padding:clamp(1.5rem,4vw,3rem) clamp(1rem,5vw,4rem);color:#fff}
+.ph-l{font-size:.58rem;letter-spacing:.4em;text-transform:uppercase;color:var(--gold-l);margin-bottom:.6rem}
+.ph-h{font-family:var(--serif);font-size:clamp(1.8rem,5vw,3.5rem);font-weight:300;line-height:1.15}
+.ph-h em{font-style:italic;color:var(--gold-l)}
+/* FOOTER */
+.footer{background:#050505;color:rgba(255,255,255,.45);padding:clamp(1.5rem,3vw,2rem) clamp(1rem,5vw,4rem);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;border-top:1px solid rgba(201,168,76,.18);font-size:.62rem;letter-spacing:.08em}
+.footer span{color:var(--gold)}
+.footer-r{display:flex;gap:1.5rem;flex-wrap:wrap}
+.footer-r a{color:rgba(255,255,255,.45);text-decoration:none;transition:color .2s}
+.footer-r a:hover{color:var(--gold)}
+/* FLOAT BUTTONS */
+.floats{position:fixed;bottom:clamp(1rem,2vw,1.5rem);right:clamp(1rem,2vw,1.5rem);z-index:990;display:flex;flex-direction:column;gap:.6rem}
+.fb{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-decoration:none;transition:transform .2s;cursor:pointer;border:none}
+.fb:hover{transform:scale(1.1)}
+.fb-wa{background:#25D366;box-shadow:0 4px 18px rgba(37,211,102,.4)}
+.fb-ph{background:var(--black);border:1px solid var(--gold);box-shadow:0 4px 18px rgba(0,0,0,.2)}
+.fb-ph:hover{background:var(--gold)}
+/* ADMIN */
+.adm-btn{position:fixed;bottom:1rem;left:1rem;z-index:2000;width:34px;height:34px;background:rgba(0,0,0,.08);border:1px solid rgba(0,0,0,.1);cursor:pointer;border-radius:8px;opacity:.15;transition:opacity .2s,background .2s;display:flex;align-items:center;justify-content:center;color:#444}
+.adm-btn:hover{opacity:1;background:var(--black);color:#fff;border-color:var(--black)}
+.adm-ov{position:fixed;inset:0;z-index:3000;display:flex;background:rgba(0,0,0,.5);backdrop-filter:blur(4px)}
+.adm-panel{width:min(420px,100vw);background:#f6f6f7;display:flex;flex-direction:column;height:100%;box-shadow:4px 0 60px rgba(0,0,0,.25)}
+.adm-top{display:flex;align-items:center;justify-content:space-between;padding:0 1rem;height:54px;background:#1a1a1a;flex-shrink:0}
+.adm-site{font-size:.78rem;font-weight:600;color:#fff}
+.adm-status{font-size:.6rem;color:rgba(255,255,255,.4)}
+.adm-acts{display:flex;gap:.5rem}
+.adm-close{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:.4rem .8rem;font-size:.7rem;font-weight:500;cursor:pointer;border-radius:6px;font-family:inherit}
+.adm-save{background:#008060;border:none;color:#fff;padding:.4rem .9rem;font-size:.7rem;font-weight:600;cursor:pointer;border-radius:6px;font-family:inherit;display:flex;align-items:center;gap:.4rem}
+.adm-save:hover{background:#006e52}
+.adm-save:disabled{background:#999;cursor:not-allowed}
+.adm-bc{display:flex;align-items:center;gap:.4rem;padding:.65rem 1rem;background:#fff;border-bottom:1px solid #e1e3e5;flex-shrink:0}
+.adm-bc-btn{background:none;border:none;cursor:pointer;padding:.2rem .3rem;border-radius:4px;color:#6d7175;font-size:.7rem;display:flex;align-items:center}
+.adm-bc-btn:hover{background:#f1f2f3;color:#202223}
+.adm-bc-sep{color:#c9cccf;font-size:.68rem}
+.adm-bc-cur{font-size:.7rem;font-weight:600;color:#202223}
+.adm-list{flex:1;overflow-y:auto;padding:.75rem}
+.adm-grp{font-size:.58rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#6d7175;padding:.35rem .5rem;margin:.75rem 0 .25rem}
+.adm-grp:first-child{margin-top:0}
+.adm-row{display:flex;align-items:center;justify-content:space-between;padding:.7rem .85rem;background:#fff;border-radius:8px;border:1px solid #e1e3e5;margin-bottom:.3rem;cursor:pointer;transition:box-shadow .15s,border-color .15s}
+.adm-row:hover{box-shadow:0 2px 8px rgba(0,0,0,.07);border-color:#c9cccf}
+.adm-row-l{display:flex;align-items:center;gap:.65rem}
+.adm-ic{width:30px;height:30px;background:#f6f6f7;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#6d7175;flex-shrink:0}
+.adm-rn{font-size:.76rem;font-weight:500;color:#202223}
+.adm-rd{font-size:.62rem;color:#6d7175;margin-top:1px}
+.adm-ed{flex:1;overflow-y:auto}
+.adm-ed-b{padding:.75rem}
+/* SP CARD */
+.spc{background:#fff;border-radius:8px;border:1px solid #e1e3e5;margin-bottom:.65rem;overflow:hidden}
+.spc-h{padding:.85rem .95rem;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none}
+.spc-h:hover{background:#fafbfb}
+.spc-t{font-size:.76rem;font-weight:600;color:#202223}
+.spc-s{font-size:.62rem;color:#6d7175;margin-top:2px}
+.spc-v{color:#8c9196;transition:transform .2s}
+.spc-v.open{transform:rotate(180deg)}
+.spc-b{padding:.75rem .95rem .95rem;border-top:1px solid #f1f2f3}
+/* FIELDS */
+.spf{margin-bottom:.8rem}
+.spf:last-child{margin-bottom:0}
+.spf label{display:block;font-size:.68rem;font-weight:600;color:#202223;margin-bottom:.3rem}
+.spf input,.spf textarea,.spf select{width:100%;border:1px solid #c9cccf;border-radius:6px;padding:.5rem .7rem;font-size:.78rem;color:#202223;outline:none;font-family:inherit;transition:border-color .15s,box-shadow .15s;background:#fff}
+.spf input:focus,.spf textarea:focus{border-color:#005bd3;box-shadow:0 0 0 3px rgba(0,91,211,.1)}
+.spf textarea{height:75px;resize:vertical;line-height:1.5}
+.spf-h{font-size:.6rem;color:#6d7175;margin-top:.25rem}
+/* IMG UPLOAD */
+.up-area{border:2px dashed #c9cccf;border-radius:8px;padding:1rem;text-align:center;cursor:pointer;background:#fafbfb;position:relative;overflow:hidden;transition:border-color .2s,background .2s}
+.up-area:hover{border-color:#005bd3;background:#f0f5ff}
+.up-area input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.up-t{font-size:.7rem;font-weight:600;color:#005bd3}
+.up-s{font-size:.6rem;color:#6d7175;margin-top:.15rem}
+.up-ing{font-size:.7rem;color:#6d7175;display:flex;align-items:center;justify-content:center;gap:.4rem;padding:.3rem}
+.up-prev{position:relative;border-radius:8px;overflow:hidden;border:1px solid #e1e3e5;margin-bottom:.5rem}
+.up-prev img{width:100%;height:130px;object-fit:cover;display:block}
+.up-acts{position:absolute;top:.4rem;right:.4rem;display:flex;gap:.3rem}
+.up-btn{width:26px;height:26px;background:#fff;border:1px solid #e1e3e5;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#6d7175;font-size:.8rem;transition:all .15s}
+.up-btn:hover{background:#fee2e2;border-color:#fca5a5;color:#dc2626}
+.logo-prev img{object-fit:contain!important;background:#f6f6f7;padding:.5rem}
+.sp-add{width:100%;border:2px dashed #c9cccf;background:none;border-radius:8px;padding:.75rem;font-size:.72rem;color:#6d7175;cursor:pointer;font-family:inherit;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:.4rem;margin-top:.5rem}
+.sp-add:hover{border-color:#005bd3;color:#005bd3;background:#f0f5ff}
+.sp-del{width:100%;border:none;background:#fff4f4;border-radius:6px;padding:.55rem;font-size:.68rem;color:#dc2626;cursor:pointer;font-family:inherit;transition:background .15s;margin-top:.75rem;display:flex;align-items:center;justify-content:center;gap:.4rem}
+.sp-del:hover{background:#fee2e2}
+.ig-g{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.5rem}
+.ig-i{position:relative;aspect-ratio:4/3;border-radius:6px;overflow:hidden;border:1px solid #e1e3e5}
+.ig-i img{width:100%;height:100%;object-fit:cover}
+.ig-rm{position:absolute;top:4px;right:4px;width:22px;height:22px;background:rgba(220,38,38,.9);border:none;border-radius:4px;cursor:pointer;color:#fff;font-weight:700;font-size:.9rem;display:flex;align-items:center;justify-content:center}
+/* LOGIN */
+.login{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1.5rem;gap:1rem}
+.login-logo{width:52px;height:52px;background:var(--black);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--gold);font-family:var(--serif);font-size:1.4rem;font-weight:600}
+.login-t{font-size:.95rem;font-weight:700;color:#202223}
+.login-s{font-size:.7rem;color:#6d7175;text-align:center;line-height:1.5}
+.login-box{width:100%;background:#fff;border:1px solid #e1e3e5;border-radius:10px;padding:1.3rem;display:flex;flex-direction:column;gap:.8rem}
+.login-box input{width:100%;border:1px solid #c9cccf;border-radius:6px;padding:.6rem .9rem;font-size:.85rem;outline:none;font-family:inherit;text-align:center;letter-spacing:.15em}
+.login-box input:focus{border-color:#005bd3;box-shadow:0 0 0 3px rgba(0,91,211,.1)}
+.login-btn{width:100%;background:#008060;color:#fff;border:none;padding:.65rem;font-size:.75rem;font-weight:600;border-radius:6px;cursor:pointer;font-family:inherit}
+.login-hint{font-size:.6rem;color:#6d7175;text-align:center}
+.login-err{background:#fff4f4;border:1px solid #fca5a5;color:#dc2626;border-radius:6px;padding:.45rem .7rem;font-size:.7rem;text-align:center}
+/* SETUP BANNER */
+.setup{background:#fff8e1;border:1px solid #f59e0b;border-radius:8px;padding:.75rem 1rem;margin-bottom:.75rem;font-size:.68rem;color:#92400e;line-height:1.5}
+.setup strong{display:block;margin-bottom:.25rem;color:#78350f;font-size:.72rem}
+/* TOAST */
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);color:#fff;padding:.65rem 1.4rem;font-size:.72rem;z-index:5000;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.2);pointer-events:none;white-space:nowrap;animation:fadeInUp .3s ease}
+.toast-ok{background:#202223}
+.toast-er{background:#dc2626}
+.adm-dismiss{flex:1;cursor:pointer}
+/* SPINNER */
+.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+.spin-d{border-color:rgba(0,0,0,.15);border-top-color:#6d7175}
+/* ANIMATIONS */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
+@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-7px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* RESPONSIVE */
+@media(max-width:1023px){
+  .ab-g,.story-g{grid-template-columns:1fr;gap:2.5rem}.ab-img{aspect-ratio:16/9}.ab-acc{display:none}
+  .mv-g{grid-template-columns:1fr}.gal-g{grid-template-columns:repeat(2,1fr)}
+  .cn-g{grid-template-columns:1fr;gap:3rem}.pr-g{grid-template-columns:repeat(2,1fr)}
+  .wy-g{grid-template-columns:repeat(2,1fr)}.pj-sp{grid-template-columns:1fr}.pj-img{min-height:280px}
+  .frow{grid-template-columns:1fr}.hs{flex-direction:column;gap:.8rem;text-align:center}.hs-dv{display:none}
+  .footer{flex-direction:column;align-items:center;text-align:center}.footer-r{justify-content:center}
+  .pd-body{grid-template-columns:1fr}.pd-gal{grid-template-columns:1fr}.pd-main{aspect-ratio:16/9}
+}
+@media(max-width:767px){
+  :root{--nav-h:60px}.nav{padding:0 1rem}.nav-links{display:none}.brand-sub{display:none}
+  .ct{padding:0 1rem}section{padding:clamp(2.5rem,8vw,4rem) 0}
+  .hero-s,.scroll-hint{display:none}.ph{height:clamp(140px,45vw,240px)}
+  .ab-img{aspect-ratio:4/3}.gal-g{grid-template-columns:1fr 1fr}
+  .pd-g{grid-template-columns:1fr;gap:2px}.pd-info{transform:translateY(0)!important;background:linear-gradient(to top,rgba(0,0,0,.92) 0%,transparent 70%)!important}.pd-dc{display:none}
+  .pr-g{grid-template-columns:1fr;gap:.75rem}.wy-g{grid-template-columns:1fr}
+  .pj-sp{grid-template-columns:1fr}.pj-img{min-height:220px}.pj-fs{grid-template-columns:1fr;gap:.6rem}
+  .cn-g{grid-template-columns:1fr;gap:2rem}.frow{grid-template-columns:1fr}
+  .footer{flex-direction:column;align-items:center;gap:.8rem}.footer-r{justify-content:center}
+  .fb{width:46px;height:46px}.adm-panel{width:100vw}
+  .mv-g{grid-template-columns:1fr;margin-top:2rem}.story-g{margin-top:2.5rem}
+}
+`;
+
+// ── SVG ICONS ─────────────────────────────────────────────────
+const PhIc = ({s=16,c="currentColor"}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.38 2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>;
+const MlIc = ({s=16}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>;
+const MpIc = ({s=16}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>;
+const WaIc = ({c="white"}) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>;
+const ChR = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M9 18l6-6-6-6"/></svg>;
+const ChD = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 9l6 6 6-6"/></svg>;
+const TrIc = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/></svg>;
+const PlIc = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>;
+const GrIc = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>;
+
+// ── SP CARD (collapsible) ──────────────────────────────────────
+function SpCard({title,subtitle,children,defaultOpen=false}) {
+  const [open,setOpen] = useState(defaultOpen);
+  return (
+    <div className="spc">
+      <div className="spc-h" onClick={()=>setOpen(o=>!o)}>
+        <div><div className="spc-t">{title}</div>{subtitle&&<div className="spc-s">{subtitle}</div>}</div>
+        <span className={"spc-v"+(open?" open":"")}><ChD/></span>
+      </div>
+      {open && <div className="spc-b">{children}</div>}
+    </div>
+  );
+}
+
+// ── IMAGE UPLOAD ───────────────────────────────────────────────
+function ImgUp({value,onUrl,label,hint,isLogo=false}) {
+  const [busy,setBusy] = useState(false);
+  const [err,setErr]   = useState("");
+
+  const handle = async (e) => {
+    const file = e.target.files[0]; if(!file) return;
+    setErr("");
+    if (!CDN_OK) {
+      // Fallback: base64 (local only)
+      setErr("⚠️ Cloudinary not set up yet — this image won't show on other devices.");
+      const r = new FileReader();
+      r.onload = ev => onUrl(ev.target.result);
+      r.readAsDataURL(file);
+      e.target.value = ""; return;
+    }
+    setBusy(true);
+    try { onUrl(await cdnUpload(file)); }
+    catch { setErr("Upload failed. Check your Cloudinary settings."); }
+    finally { setBusy(false); e.target.value = ""; }
+  };
+
+  return (
+    <div className="spf">
+      {label && <label>{label}</label>}
+      {value ? (
+        <div className={"up-prev"+(isLogo?" logo-prev":"")}>
+          <img src={value} alt="preview"/>
+          <div className="up-acts">
+            <label className="up-btn" title="Replace" style={{cursor:"pointer"}}>↑<input type="file" accept="image/*" onChange={handle} style={{display:"none"}}/></label>
+            <button className="up-btn" onClick={()=>onUrl("")}>✕</button>
+          </div>
+        </div>
+      ) : (
+        <div className="up-area">
+          <input type="file" accept="image/*" onChange={handle} disabled={busy}/>
+          {busy
+            ? <div className="up-ing"><span className="spin spin-d"></span> Uploading to Cloudinary…</div>
+            : <><div className="up-t">☁️ {CDN_OK?"Upload Image":"Upload (set up Cloudinary first)"}</div><div className="up-s">{CDN_OK?"Uploaded to Cloudinary — visible on ALL devices":"Without Cloudinary, images only show on this device"}</div></>
+          }
+        </div>
+      )}
+      <input
+        value={value && !value.startsWith("data:") ? value : ""}
+        onChange={e=>onUrl(e.target.value)}
+        placeholder="Or paste an image URL here"
+        style={{marginTop:".45rem",borderRadius:6,border:"1px solid #c9cccf",padding:".45rem .7rem",fontSize:".75rem",width:"100%",outline:"none",fontFamily:"inherit"}}
+      />
+      {err && <div style={{fontSize:".62rem",color:"#dc2626",marginTop:".25rem"}}>{err}</div>}
+      {hint && <div className="spf-h">{hint}</div>}
+    </div>
+  );
+}
+
+// ── MAIN APP ──────────────────────────────────────────────────
+function App() {
+  const [content,  setCon]      = useState(DEF);
+  const [loaded,   setLoaded]   = useState(false);
+  const [page,     setPage]     = useState("home");
+  const [selProj,  setSelProj]  = useState(null);
+  const [scrolled, setScrolled] = useState(false);
+  const [sbOpen,   setSbOpen]   = useState(false);
+  const [admOpen,  setAdmOpen]  = useState(false);
+  const [authed,   setAuthed]   = useState(false);
+  const [pass,     setPass]     = useState("");
+  const [passErr,  setPassErr]  = useState(false);
+  const [admTab,   setAdmTab]   = useState(null);
+  const [draft,    setDraft]    = useState({});
+  const [saving,   setSaving]   = useState(false);
+  const [toast,    setToast]    = useState(null);
+  const [form,     setForm]     = useState({name:"",phone:"",email:"",product:"",message:""});
+  const [formOk,   setFormOk]   = useState(false);
+
+  // Load cloud content on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await cloudLoad();
+        if (data) { setCon({...DEF,...data}); }
+        else {
+          // Fallback to localStorage
+          try { const ls=localStorage.getItem("me_content"); if(ls) setCon({...DEF,...JSON.parse(ls)}); } catch {}
+        }
+      } catch {}
+      setLoaded(true);
+    })();
+  }, []);
+
+  useEffect(() => {
+    const fn = () => setScrolled(window.scrollY > 40);
+    window.addEventListener("scroll", fn);
+    return () => window.removeEventListener("scroll", fn);
+  }, []);
+
+  useEffect(() => {
+    if (!content.favicon) return;
+    let lk = document.querySelector("link[rel~='icon']");
+    if (!lk) { lk = document.createElement("link"); lk.rel="icon"; document.head.appendChild(lk); }
+    lk.href = content.favicon;
+  }, [content.favicon]);
+
+  const toast_ = (msg,type="ok") => { setToast({msg,type}); setTimeout(()=>setToast(null),3500); };
+
+  const go = (p) => { setPage(p); setSelProj(null); setSbOpen(false); window.scrollTo({top:0,behavior:"smooth"}); };
+  const openProj = (p) => { setSelProj(p); window.scrollTo({top:0,behavior:"smooth"}); };
+
+  const openAdmin = () => { setDraft(JSON.parse(JSON.stringify(content))); setAdmTab(null); setAdmOpen(true); };
+  const login = () => {
+    if (pass === "Deco@1955") { setAuthed(true); setPassErr(false); }
+    else { setPassErr(true); setPass(""); }
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await cloudSave(draft);
+      try { localStorage.setItem("me_content",JSON.stringify(draft)); } catch {}
+      setCon({...draft});
+      toast_("✓ Saved to cloud — live on all devices!", "ok");
+    } catch {
+      // Cloud failed — save locally only
+      try {
+        localStorage.setItem("me_content",JSON.stringify(draft));
+        setCon({...draft});
+        toast_("⚠️ Saved locally only — set up JSONBin to sync all devices", "er");
+      } catch { toast_("Save failed — check your internet connection", "er"); }
+    }
+    setSaving(false);
+  };
+
+  // Draft helpers
+  const upd = (k,v) => setDraft(p=>({...p,[k]:v}));
+  const updProd = (i,k,v) => setDraft(p=>{const a=[...p.products];a[i]={...a[i],[k]:v};return{...p,products:a};});
+  const updProj = (i,k,v) => setDraft(p=>{const a=[...p.projects];a[i]={...a[i],[k]:v};return{...p,projects:a};});
+  const updProjImg = (i,imgs) => setDraft(p=>{const a=[...p.projects];a[i]={...a[i],images:imgs};return{...p,projects:a};});
+  const updWhy = (i,k,v) => setDraft(p=>{const a=[...p.whyPoints];a[i]={...a[i],[k]:v};return{...p,whyPoints:a};});
+  const updNav = (i,v) => setDraft(p=>{const a=[...(p.navItems||DEF.navItems)];a[i]={...a[i],label:v};return{...p,navItems:a};});
+  const updGal = (i,v) => setDraft(p=>{const a=[...(p.aboutGallery||[])];a[i]=v;return{...p,aboutGallery:a};});
+  const updPjFeat = (i,v) => setDraft(p=>{const a=[...p.poojaFeatures];a[i]=v;return{...p,poojaFeatures:a};});
+  const addProd = () => setDraft(p=>({...p,products:[...(p.products||[]),{id:Date.now(),name:"New Collection",subtitle:"",desc:"",image:"",tag:""}]}));
+  const delProd = (i) => setDraft(p=>{const a=[...p.products];a.splice(i,1);return{...p,products:a};});
+  const addProj = () => setDraft(p=>({...p,projects:[...(p.projects||[]),{id:Date.now(),title:"New Project",category:"",location:"",year:String(new Date().getFullYear()),description:"",images:[]}]}));
+  const delProj = (i) => setDraft(p=>{const a=[...p.projects];a.splice(i,1);return{...p,projects:a};});
+  const addWhy = () => setDraft(p=>({...p,whyPoints:[...(p.whyPoints||[]),{icon:"✦",title:"New Point",desc:""}]}));
+  const delWhy = (i) => setDraft(p=>{const a=[...p.whyPoints];a.splice(i,1);return{...p,whyPoints:a};});
+  const addGal = () => setDraft(p=>({...p,aboutGallery:[...(p.aboutGallery||[]),""] }));
+  const delGal = (i) => setDraft(p=>{const a=[...(p.aboutGallery||[])];a.splice(i,1);return{...p,aboutGallery:a};});
+  const addPjFeat = () => setDraft(p=>({...p,poojaFeatures:[...(p.poojaFeatures||[]),"New Feature"]}));
+  const delPjFeat = (i) => setDraft(p=>{const a=[...p.poojaFeatures];a.splice(i,1);return{...p,poojaFeatures:a};});
+
+  const submitForm = async (e) => {
+    e.preventDefault();
+    try { await fetch("https://formspree.io/f/YOUR_FORMSPREE_ID",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)}); } catch {}
+    setFormOk(true); setTimeout(()=>setFormOk(false),5000);
+    setForm({name:"",phone:"",email:"",product:"",message:""});
+  };
+
+  if (!loaded) return (
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",color:"#C9A84C",fontSize:".75rem",letterSpacing:".3em",textTransform:"uppercase",gap:".75rem"}}>
+      <span className="spin" style={{borderTopColor:"#C9A84C",borderColor:"rgba(201,168,76,.2)"}}></span> Loading…
+    </div>
+  );
+
+  const c = content;
+  const NAV = c.navItems || DEF.navItems;
+
+  // ── PAGE SECTIONS ─────────────────────────────────────────
+  const Hero = () => (
+    <section className="hero" style={{padding:0,marginTop:"calc(-1 * var(--nav-h))"}}>
+      <div className="hero-bg" style={{backgroundImage:`url(${c.heroImage})`}}/>
+      <div className="hero-ov"/>
+      <div className="hero-ct">
+        <div className="hero-ey">✦ &nbsp;Mandir Emporium &nbsp;·&nbsp; A Unit of The Deco Furns &nbsp;✦</div>
+        <h1 className="hero-h serif">
+          {c.tagline.split(". ").map((t,i)=> i%2===1 ? <em key={i}>{t}</em> : <span key={i}>{t}. </span>)}
+        </h1>
+        <p className="hero-s">{c.subTagline}</p>
+        <div className="hero-btns">
+          <button className="btn-g" onClick={()=>go("collections")}>{c.heroBtnLabel||"Explore Collections"}</button>
+          <a href={"tel:"+c.phone} className="btn-o"><PhIc/> {c.phone}</a>
+        </div>
+      </div>
+      <div className="scroll-hint"><div className="scroll-line"/>Scroll</div>
+    </section>
+  );
+
+  const Heritage = () => (
+    <div className="hs">
+      <div className="hs-it"><div className="hs-l">A Proud Unit of</div><div className="hs-v serif">The Deco Furns</div></div>
+      <div className="hs-dv"/>
+      <div className="hs-tg">Rooted in <em>70+ years of expertise</em>, The Deco Furns blends heritage craftsmanship with modern luxury to create masterpieces that last generations.</div>
+      <div className="hs-dv"/>
+      <div className="hs-it"><div className="hs-l">Legacy Since</div><div className="hs-v serif">1954</div></div>
+    </div>
+  );
+
+  const About = ({compact=false}) => (
+    <section id="about">
+      <div className="ct">
+        <div className="ab-g">
+          <div className="ab-img">
+            <img src={c.aboutImage} alt="About" loading="lazy"/>
+            <div className="ab-acc"/>
+            <div className="ab-tag">Est. 1954 · New Delhi</div>
+          </div>
+          <div>
+            <div className="sl">✦ {c.aboutSubtitle||"Our Legacy"}</div>
+            <h2 className="sh serif">{c.aboutTitle}</h2>
+            <div className="sdiv"/>
+            <p className="sp">{c.aboutText}</p>
+            {!compact && (
+              <div className="stats">
+                <div><div className="st-n serif">70+</div><div className="st-l">Years of Heritage</div></div>
+                <div><div className="st-n serif">5000+</div><div className="st-l">Mandirs Created</div></div>
+                <div><div className="st-n serif">100+</div><div className="st-l">Master Artisans</div></div>
+              </div>
+            )}
+            {compact && <button className="btn-g" style={{marginTop:"1.5rem"}} onClick={()=>go("about")}>Read Our Story →</button>}
+          </div>
+        </div>
+        {!compact && <>
+          <div className="story-g">
+            <div>
+              <div className="sl">✦ Our Story</div>
+              <h2 className="sh serif">{c.aboutStoryTitle}</h2>
+              <div className="sdiv"/>
+              <p className="sp" style={{maxWidth:"100%"}}>{c.aboutStoryText}</p>
+            </div>
+            <div className="story-img"><img src={c.aboutStoryImage} alt="Story" loading="lazy"/></div>
+          </div>
+          <div className="mv-g">
+            <div className="mv-c"><div className="mv-l">Our Mission</div><div className="mv-t">"{c.aboutMission}"</div></div>
+            <div className="mv-c"><div className="mv-l">Our Vision</div><div className="mv-t">"{c.aboutVision}"</div></div>
+          </div>
+          {(c.aboutGallery||[]).length > 0 && (
+            <div style={{marginTop:"4rem"}}>
+              <div className="sl" style={{marginBottom:"1.5rem"}}>✦ Our Work</div>
+              <div className="gal-g">
+                {(c.aboutGallery||[]).map((img,i)=><div key={i} className="gal-i"><img src={img} alt={"Gallery "+(i+1)} loading="lazy"/></div>)}
+              </div>
+            </div>
+          )}
+        </>}
+      </div>
+    </section>
+  );
+
+  const Products = () => (
+    <section className="pd-bg">
+      <div className="ct">
+        <div className="cx">
+          <div className="sl">✦ Our Collections</div>
+          <h2 className="sh serif">Sacred <em>Masterpieces</em></h2>
+          <div className="sdiv"/>
+          <p className="sp">Distinct collections crafted from the finest materials worldwide.</p>
+        </div>
+        <div className="pd-g">
+          {c.products.map(p=>(
+            <div key={p.id} className="pd-c">
+              <img src={p.image} alt={p.name} loading="lazy"/>
+              {p.tag && <div className="pd-badge">{p.tag}</div>}
+              <div className="pd-info">
+                <div className="pd-sub">{p.subtitle}</div>
+                <div className="pd-nm serif">{p.name}</div>
+                <div className="pd-dc">{p.desc}</div>
+                <div className="pd-cta">Enquire Now →</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+
+  const Pooja = () => (
+    <section style={{padding:0}}>
+      <div className="pj-sp">
+        <div className="pj-img"><img src={c.poojaImage} alt="Pooja Room" loading="lazy"/></div>
+        <div className="pj-ct">
+          <div className="sl" style={{color:"var(--gold-l)"}}>✦ Complete Pooja Rooms</div>
+          <h2 className="sh serif" style={{color:"#fff"}}>{c.poojaTitle}</h2>
+          <div className="sdiv"/>
+          <p className="sp">{c.poojaSubtitle}</p>
+          <p className="sp" style={{marginTop:".8rem"}}>{c.poojaText}</p>
+          <div className="pj-fs">
+            {c.poojaFeatures.map((f,i)=><div key={i} className="pj-f"><div className="pj-dot"/>{f}</div>)}
+          </div>
+          <a href={`https://wa.me/${c.whatsapp}?text=Hello! I'm interested in a complete Pooja Room setup.`} className="btn-g" target="_blank" rel="noopener noreferrer">Discuss Your Project →</a>
+        </div>
+      </div>
+    </section>
+  );
+
+  const Projects = () => (
+    <section>
+      <div className="ct">
+        <div className="cx">
+          <div className="sl">✦ Signature Projects</div>
+          <h2 className="sh serif">Our <em>Top Projects</em></h2>
+          <div className="sdiv"/>
+          <p className="sp">{c.projectsSubtitle}</p>
+        </div>
+        <div className="pr-g">
+          {c.projects.map(p=>(
+            <div key={p.id} className="pr-c" onClick={()=>openProj(p)}>
+              <img src={(p.images&&p.images[0])||""} alt={p.title} loading="lazy"/>
+              <div className="pr-ov">
+                <div className="pr-cat">{p.category}</div>
+                <div className="pr-nm serif">{p.title}</div>
+                {p.location && <div className="pr-loc">{p.location}{p.year?" · "+p.year:""}</div>}
+                <div className="pr-vw">View Project →</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+
+  const ProjDetail = ({proj}) => (
+    <div className="page">
+      <div className="pd-pg ct">
+        <button className="pd-bk" onClick={()=>setSelProj(null)}>← Back to Projects</button>
+        <div className="pd-cat">{proj.category}</div>
+        <h1 className="pd-h serif">{proj.title}</h1>
+        <div className="pd-meta">
+          {proj.location && <div className="pd-mi"><strong>Location:</strong> {proj.location}</div>}
+          {proj.year && <div className="pd-mi"><strong>Year:</strong> {proj.year}</div>}
+          {proj.category && <div className="pd-mi"><strong>Material:</strong> {proj.category}</div>}
+        </div>
+        {(proj.images||[]).length > 0 && (
+          <div className="pd-gal">
+            <div className="pd-main"><img src={proj.images[0]} alt={proj.title}/></div>
+            {proj.images.slice(1).map((img,i)=><div key={i} className="pd-th"><img src={img} alt={proj.title+" "+(i+2)}/></div>)}
+          </div>
+        )}
+        <div className="pd-body">
+          <p className="pd-desc">{proj.description}</p>
+          <div>
+            <div className="pd-sl">Material</div><div className="pd-sv">{proj.category}</div>
+            {proj.location && <><div className="pd-sl">Location</div><div className="pd-sv">{proj.location}</div></>}
+            {proj.year && <><div className="pd-sl">Year</div><div className="pd-sv">{proj.year}</div></>}
+            <div style={{marginTop:"2rem"}}>
+              <a href={`https://wa.me/${c.whatsapp}?text=Hello! I'm interested in a project similar to ${encodeURIComponent(proj.title)}`} className="btn-g" target="_blank" rel="noopener noreferrer" style={{fontSize:".62rem"}}>Enquire About This →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const Why = () => (
+    <section className="wy-bg">
+      <div className="ct">
+        <div className="cx">
+          <div className="sl">✦ Why Choose Us</div>
+          <h2 className="sh serif"><em>Why</em> Mandir Emporium?</h2>
+          <div className="sdiv"/>
+        </div>
+        <div className="wy-g">
+          {c.whyPoints.map((w,i)=>(
+            <div key={i} className="wy-c">
+              <div className="wy-ic">{w.icon}</div>
+              <div className="wy-t">{w.title}</div>
+              <div className="wy-d">{w.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+
+  const Contact = () => (
+    <section className="cn-bg">
+      <div className="ct">
+        <div className="cn-g">
+          <div>
+            <div className="sl" style={{color:"var(--gold-l)"}}>✦ Get In Touch</div>
+            <h2 className="sh serif" style={{color:"#fff"}}>Let's Create Your<br/><em>Sacred Space</em></h2>
+            <div className="sdiv"/>
+            <p className="sp">Reach out for pricing, customisation, or to schedule a showroom visit.</p>
+            <div className="cn-items">
+              <div className="cn-it"><div className="cn-ic"><PhIc s={15} c="#C9A84C"/></div><div><div className="cn-il">Call Us</div><div className="cn-iv"><a href={"tel:"+c.phone}>{c.phone}</a></div></div></div>
+              <div className="cn-it"><div className="cn-ic"><MlIc s={15}/></div><div><div className="cn-il">Email</div><div className="cn-iv"><a href={"mailto:"+c.email}>{c.email}</a></div></div></div>
+              <div className="cn-it"><div className="cn-ic"><MpIc s={15}/></div><div><div className="cn-il">Visit Us</div><div className="cn-iv">{c.address}</div></div></div>
+            </div>
+            <a href={`https://wa.me/${c.whatsapp}?text=Hello! I'm interested in your mandirs.`} className="wa-btn" target="_blank" rel="noopener noreferrer"><WaIc/> Chat on WhatsApp</a>
+            <div className="socials">
+              <a href={c.instagram} target="_blank" rel="noopener noreferrer" className="soc">IG</a>
+              <a href={c.facebook}  target="_blank" rel="noopener noreferrer" className="soc">FB</a>
+              <a href={c.youtube}   target="_blank" rel="noopener noreferrer" className="soc">YT</a>
+              <a href={c.pinterest} target="_blank" rel="noopener noreferrer" className="soc">PT</a>
+            </div>
+          </div>
+          <div>
+            <div className="fh serif">Send an Enquiry</div>
+            {formOk ? (
+              <div className="fok">✦ Thank You! We will contact you within 24 hours.</div>
+            ) : (
+              <form onSubmit={submitForm}>
+                <div className="frow">
+                  <div className="fg"><label>Your Name *</label><input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Full Name"/></div>
+                  <div className="fg"><label>Phone *</label><input required value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="+91 XXXXX XXXXX"/></div>
+                </div>
+                <div className="fg"><label>Email</label><input type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="your@email.com"/></div>
+                <div className="fg">
+                  <label>I'm Interested In *</label>
+                  <select required value={form.product} onChange={e=>setForm({...form,product:e.target.value})}>
+                    <option value="">Select a Collection</option>
+                    {c.products.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
+                    <option value="Complete Pooja Room Setup">Complete Pooja Room Setup</option>
+                    <option value="Custom Design">Custom Design</option>
+                  </select>
+                </div>
+                <div className="fg"><label>Message</label><textarea value={form.message} onChange={e=>setForm({...form,message:e.target.value})} placeholder="Tell us about your space, budget, and requirements."/></div>
+                <button type="submit" className="fsub">Send Enquiry ✦</button>
+              </form>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+
+  const PH = ({title,em,label,bg}) => (
+    <div className="ph">
+      <div className="ph-bg" style={{backgroundImage:`url(${bg})`}}/>
+      <div className="ph-ov"/>
+      <div className="ph-ct"><div className="ph-l">✦ {label}</div><h1 className="ph-h serif">{title} <em>{em}</em></h1></div>
+    </div>
+  );
+
+  const Footer = () => (
+    <footer className="footer">
+      <div>© {new Date().getFullYear()} <span>Mandir Emporium</span> · {c.footerText}</div>
+      <div className="footer-r">
+        {NAV.map(n=><a key={n.key} href="#" onClick={e=>{e.preventDefault();go(n.key)}}>{n.label}</a>)}
+      </div>
+    </footer>
+  );
+
+  const renderPage = () => {
+    if (page==="projects" && selProj) return <ProjDetail proj={selProj}/>;
+    switch(page) {
+      case "home":        return <><Hero/><Heritage/><About compact/><Products/><Pooja/><Projects/><Why/><Contact/></>;
+      case "collections": return <div className="page"><PH title="Our Sacred" em="Collections" label="Mandir Collections" bg={c.heroImage}/><Products/></div>;
+      case "pooja":       return <div className="page"><PH title="Complete" em="Pooja Rooms" label="Interior Pooja Room Setup" bg={c.poojaImage}/><Pooja/><Why/></div>;
+      case "projects":    return <div className="page"><PH title="Signature" em="Projects" label="Our Portfolio" bg={c.heroImage}/><Projects/></div>;
+      case "about":       return <div className="page"><PH title="Our" em="Story & Legacy" label="About Mandir Emporium" bg={c.aboutImage}/><Heritage/><About/><Why/></div>;
+      case "contact":     return <div className="page"><PH title="Get In" em="Touch" label="Contact Us" bg={c.heroImage}/><Contact/></div>;
+      default: return null;
+    }
+  };
+
+  // Admin sections menu
+  const SECTIONS = [
+    {group:"SITE SETTINGS"},
+    {key:"brand",       name:"Brand & Logo",     desc:"Logo, name, nav labels"},
+    {key:"favicon",     name:"Favicon",          desc:"Browser tab icon"},
+    {key:"footer",      name:"Footer",           desc:"Copyright text"},
+    {group:"PAGES"},
+    {key:"homepage",    name:"Homepage Hero",    desc:"Image, tagline, CTA"},
+    {key:"about",       name:"About Us",         desc:"Story, mission, vision, gallery"},
+    {key:"collections", name:"Collections",      desc:"Products & descriptions"},
+    {key:"projects",    name:"Projects",         desc:"Add, edit, delete projects"},
+    {key:"pooja",       name:"Pooja Rooms",      desc:"Content & features list"},
+    {key:"contact",     name:"Contact",          desc:"Phone, email, address, socials"},
+    {group:"SECTIONS"},
+    {key:"why",         name:"Why Choose Us",    desc:"USP points"},
+  ];
+
+  // Admin editor content per tab
+  const AdminEditor = () => {
+    const d = draft;
+    if (!admTab) return null;
+    return (
+      <div className="adm-ed-b">
+        {admTab==="brand" && <>
+          <SpCard title="Logo Image" defaultOpen subtitle="Shows instead of text brand name in navbar">
+            <ImgUp value={d.logoImage||""} onUrl={v=>upd("logoImage",v)} label="Logo Image" hint="Transparent PNG, wide format recommended." isLogo/>
+            {d.logoImage && <button className="sp-del" onClick={()=>upd("logoImage","")}><TrIc/> Remove Logo (show text instead)</button>}
+          </SpCard>
+          <SpCard title="Brand Name (text fallback)">
+            <div className="spf"><label>Brand Name</label><input value={d.brandName||""} onChange={e=>upd("brandName",e.target.value)}/></div>
+          </SpCard>
+          <SpCard title="Navigation Labels">
+            {(d.navItems||DEF.navItems).map((n,i)=>(
+              <div className="spf" key={n.key}>
+                <label>{n.key.charAt(0).toUpperCase()+n.key.slice(1)} Page Label</label>
+                <input value={n.label} onChange={e=>updNav(i,e.target.value)}/>
+              </div>
+            ))}
+          </SpCard>
+          <SpCard title="Phone & WhatsApp">
+            <div className="spf"><label>Phone Number</label><input value={d.phone||""} onChange={e=>upd("phone",e.target.value)}/></div>
+            <div className="spf"><label>WhatsApp (country code + number, no +)</label><input value={d.whatsapp||""} onChange={e=>upd("whatsapp",e.target.value)}/><div className="spf-h">Example: 919876543210</div></div>
+          </SpCard>
+        </>}
+
+        {admTab==="favicon" && (
+          <SpCard title="Favicon" defaultOpen>
+            <ImgUp value={d.favicon||""} onUrl={v=>upd("favicon",v)} label="Favicon" hint="Square 512×512px PNG recommended."/>
+          </SpCard>
+        )}
+
+        {admTab==="footer" && (
+          <SpCard title="Footer Text" defaultOpen>
+            <div className="spf"><label>Footer tagline (shown after © Year · Mandir Emporium ·)</label><input value={d.footerText||""} onChange={e=>upd("footerText",e.target.value)}/></div>
+          </SpCard>
+        )}
+
+        {admTab==="homepage" && (
+          <SpCard title="Hero Banner" defaultOpen>
+            <div className="spf"><label>Main Tagline</label><input value={d.tagline||""} onChange={e=>upd("tagline",e.target.value)}/></div>
+            <div className="spf"><label>Sub Tagline</label><input value={d.subTagline||""} onChange={e=>upd("subTagline",e.target.value)}/></div>
+            <div className="spf"><label>Button Label</label><input value={d.heroBtnLabel||""} onChange={e=>upd("heroBtnLabel",e.target.value)}/></div>
+            <ImgUp value={d.heroImage||""} onUrl={v=>upd("heroImage",v)} label="Hero Background Image" hint="Best: 1920×1080px or larger."/>
+          </SpCard>
+        )}
+
+        {admTab==="about" && <>
+          <SpCard title="Main Section" defaultOpen>
+            <div className="spf"><label>Section Label</label><input value={d.aboutSubtitle||""} onChange={e=>upd("aboutSubtitle",e.target.value)}/></div>
+            <div className="spf"><label>Title</label><input value={d.aboutTitle||""} onChange={e=>upd("aboutTitle",e.target.value)}/></div>
+            <div className="spf"><label>Description</label><textarea value={d.aboutText||""} onChange={e=>upd("aboutText",e.target.value)} style={{height:100}}/></div>
+            <ImgUp value={d.aboutImage||""} onUrl={v=>upd("aboutImage",v)} label="Main Image" hint="Portrait orientation."/>
+          </SpCard>
+          <SpCard title="Our Story">
+            <div className="spf"><label>Story Title</label><input value={d.aboutStoryTitle||""} onChange={e=>upd("aboutStoryTitle",e.target.value)}/></div>
+            <div className="spf"><label>Story Text</label><textarea value={d.aboutStoryText||""} onChange={e=>upd("aboutStoryText",e.target.value)} style={{height:140}}/></div>
+            <ImgUp value={d.aboutStoryImage||""} onUrl={v=>upd("aboutStoryImage",v)} label="Story Image"/>
+          </SpCard>
+          <SpCard title="Mission & Vision">
+            <div className="spf"><label>Our Mission</label><textarea value={d.aboutMission||""} onChange={e=>upd("aboutMission",e.target.value)} style={{height:80}}/></div>
+            <div className="spf"><label>Our Vision</label><textarea value={d.aboutVision||""} onChange={e=>upd("aboutVision",e.target.value)} style={{height:80}}/></div>
+          </SpCard>
+          <SpCard title="Photo Gallery">
+            {(d.aboutGallery||[]).map((img,i)=>(
+              <div key={i} style={{marginBottom:".75rem",padding:".75rem",background:"#f9f9f9",borderRadius:"8px",border:"1px solid #e1e3e5"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:".5rem"}}>
+                  <span style={{fontSize:".7rem",fontWeight:600}}>Image {i+1}</span>
+                  <button className="up-btn" style={{background:"#fee2e2",borderColor:"#fca5a5",color:"#dc2626"}} onClick={()=>delGal(i)}>✕</button>
+                </div>
+                <ImgUp value={img} onUrl={v=>updGal(i,v)}/>
+              </div>
+            ))}
+            <button className="sp-add" onClick={addGal}><PlIc/> Add Gallery Image</button>
+          </SpCard>
+        </>}
+
+        {admTab==="collections" && <>
+          <div style={{fontSize:".68rem",color:"#6d7175",marginBottom:".75rem"}}>Each card appears on the Collections page. Hover to see description.</div>
+          {(d.products||[]).map((p,i)=>(
+            <SpCard key={p.id} title={p.name||"Product "+(i+1)} subtitle={p.subtitle}>
+              <div className="spf"><label>Name</label><input value={p.name} onChange={e=>updProd(i,"name",e.target.value)}/></div>
+              <div className="spf"><label>Subtitle</label><input value={p.subtitle} onChange={e=>updProd(i,"subtitle",e.target.value)}/></div>
+              <div className="spf"><label>Badge (e.g. Best Seller)</label><input value={p.tag||""} onChange={e=>updProd(i,"tag",e.target.value)}/></div>
+              <div className="spf"><label>Description</label><textarea value={p.desc} onChange={e=>updProd(i,"desc",e.target.value)}/></div>
+              <ImgUp value={p.image} onUrl={v=>updProd(i,"image",v)} label="Product Image" hint="Landscape, min 800×600px."/>
+              <button className="sp-del" onClick={()=>delProd(i)}><TrIc/> Delete This Product</button>
+            </SpCard>
+          ))}
+          <button className="sp-add" onClick={addProd}><PlIc/> Add New Product</button>
+        </>}
+
+        {admTab==="projects" && <>
+          <SpCard title="Section Heading" defaultOpen>
+            <div className="spf"><label>Title</label><input value={d.projectsTitle||""} onChange={e=>upd("projectsTitle",e.target.value)}/></div>
+            <div className="spf"><label>Subtitle</label><input value={d.projectsSubtitle||""} onChange={e=>upd("projectsSubtitle",e.target.value)}/></div>
+          </SpCard>
+          {(d.projects||[]).map((p,i)=>(
+            <SpCard key={p.id} title={p.title||"Project "+(i+1)} subtitle={(p.location||"")+(p.year?" · "+p.year:"")}>
+              <div className="spf"><label>Project Title</label><input value={p.title} onChange={e=>updProj(i,"title",e.target.value)}/></div>
+              <div className="spf"><label>Category / Material</label><input value={p.category||""} onChange={e=>updProj(i,"category",e.target.value)}/></div>
+              <div className="spf"><label>Location</label><input value={p.location||""} onChange={e=>updProj(i,"location",e.target.value)}/></div>
+              <div className="spf"><label>Year</label><input value={p.year||""} onChange={e=>updProj(i,"year",e.target.value)}/></div>
+              <div className="spf"><label>Description</label><textarea value={p.description||""} onChange={e=>updProj(i,"description",e.target.value)} style={{height:110}}/></div>
+              <div className="spf">
+                <label>Project Images (first = cover photo)</label>
+                {(p.images||[]).length > 0 && (
+                  <div className="ig-g">
+                    {(p.images||[]).map((img,ii)=>(
+                      <div key={ii} className="ig-i">
+                        <img src={img} alt={"img "+ii}/>
+                        <button className="ig-rm" onClick={()=>{const imgs=[...(p.images||[])];imgs.splice(ii,1);updProjImg(i,imgs);}}>×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <ImgUp value="" onUrl={v=>{if(v)updProjImg(i,[...(p.images||[]),v]);}} label="Add Image" hint="Click to add more project photos."/>
+              </div>
+              <button className="sp-del" onClick={()=>delProj(i)}><TrIc/> Delete This Project</button>
+            </SpCard>
+          ))}
+          <button className="sp-add" onClick={addProj}><PlIc/> Add New Project</button>
+        </>}
+
+        {admTab==="pooja" && <>
+          <SpCard title="Section Content" defaultOpen>
+            <div className="spf"><label>Title</label><input value={d.poojaTitle||""} onChange={e=>upd("poojaTitle",e.target.value)}/></div>
+            <div className="spf"><label>Subtitle</label><input value={d.poojaSubtitle||""} onChange={e=>upd("poojaSubtitle",e.target.value)}/></div>
+            <div className="spf"><label>Description</label><textarea value={d.poojaText||""} onChange={e=>upd("poojaText",e.target.value)} style={{height:90}}/></div>
+          </SpCard>
+          <SpCard title="Feature Points">
+            {(d.poojaFeatures||[]).map((f,i)=>(
+              <div key={i} style={{display:"flex",gap:".5rem",alignItems:"center",marginBottom:".5rem"}}>
+                <input value={f} onChange={e=>updPjFeat(i,e.target.value)} style={{flex:1,border:"1px solid #c9cccf",borderRadius:6,padding:".45rem .7rem",fontSize:".78rem",outline:"none"}}/>
+                <button style={{background:"#fee2e2",border:"none",borderRadius:4,padding:".35rem .5rem",cursor:"pointer",color:"#dc2626"}} onClick={()=>delPjFeat(i)}><TrIc/></button>
+              </div>
+            ))}
+            <button className="sp-add" onClick={addPjFeat}><PlIc/> Add Feature</button>
+          </SpCard>
+          <SpCard title="Section Image">
+            <ImgUp value={d.poojaImage||""} onUrl={v=>upd("poojaImage",v)} label="Left Panel Image" hint="Portrait or landscape."/>
+          </SpCard>
+        </>}
+
+        {admTab==="contact" && <>
+          <SpCard title="Contact Details" defaultOpen>
+            <div className="spf"><label>Phone</label><input value={d.phone||""} onChange={e=>upd("phone",e.target.value)}/></div>
+            <div className="spf"><label>WhatsApp (no +, with country code)</label><input value={d.whatsapp||""} onChange={e=>upd("whatsapp",e.target.value)}/></div>
+            <div className="spf"><label>Email</label><input value={d.email||""} onChange={e=>upd("email",e.target.value)}/></div>
+            <div className="spf"><label>Address</label><textarea value={d.address||""} onChange={e=>upd("address",e.target.value)} style={{height:65}}/></div>
+          </SpCard>
+          <SpCard title="Social Media Links">
+            <div className="spf"><label>Instagram URL</label><input value={d.instagram||""} onChange={e=>upd("instagram",e.target.value)}/></div>
+            <div className="spf"><label>Facebook URL</label><input value={d.facebook||""} onChange={e=>upd("facebook",e.target.value)}/></div>
+            <div className="spf"><label>YouTube URL</label><input value={d.youtube||""} onChange={e=>upd("youtube",e.target.value)}/></div>
+            <div className="spf"><label>Pinterest URL</label><input value={d.pinterest||""} onChange={e=>upd("pinterest",e.target.value)}/></div>
+          </SpCard>
+        </>}
+
+        {admTab==="why" && <>
+          {(d.whyPoints||[]).map((w,i)=>(
+            <SpCard key={i} title={w.title||"Point "+(i+1)}>
+              <div className="spf"><label>Title</label><input value={w.title} onChange={e=>updWhy(i,"title",e.target.value)}/></div>
+              <div className="spf"><label>Description</label><textarea value={w.desc} onChange={e=>updWhy(i,"desc",e.target.value)} style={{height:65}}/></div>
+              <button className="sp-del" onClick={()=>delWhy(i)}><TrIc/> Delete</button>
+            </SpCard>
+          ))}
+          <button className="sp-add" onClick={addWhy}><PlIc/> Add Point</button>
+        </>}
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <style>{CSS}</style>
+
+      {/* NAVBAR */}
+      <nav className={"nav"+(scrolled?" sc":"")}>
+        <div className="nav-l">
+          <button className={"hbg"+(sbOpen?" open":"")} onClick={()=>setSbOpen(o=>!o)} aria-label="Menu">
+            <span/><span/><span/>
+          </button>
+        </div>
+        <div className="nav-c">
+          <a href="#" className="brand" onClick={e=>{e.preventDefault();go("home")}}>
+            {c.logoImage
+              ? <img src={c.logoImage} alt={c.brandName} className="brand-logo"/>
+              : <><span className="brand-name">{c.brandName}</span><span className="brand-sub">A Unit of The Deco Furns · Est. 1954</span></>
+            }
+          </a>
+        </div>
+        <div className="nav-r">
+          <div className="nav-links">
+            {NAV.map(n=>(
+              <a key={n.key} href="#"
+                className={(page===n.key?"act":"")+(n.key==="contact"?" nav-cta":"")}
+                onClick={e=>{e.preventDefault();go(n.key)}}>{n.label}</a>
+            ))}
+          </div>
+        </div>
+      </nav>
+
+      {/* SIDEBAR */}
+      <div className={"sb-ov"+(sbOpen?" open":"")} onClick={()=>setSbOpen(false)}/>
+      <div className={"sb"+(sbOpen?" open":"")}>
+        <div className="sb-hd">
+          <div>
+            {c.logoImage
+              ? <img src={c.logoImage} alt={c.brandName} style={{height:36,maxWidth:140,objectFit:"contain",filter:"brightness(0) invert(1)"}}/>
+              : <><div className="sb-brand">{c.brandName}</div><div className="sb-sub">A Unit of The Deco Furns</div></>
+            }
+          </div>
+          <button className="sb-x" onClick={()=>setSbOpen(false)}>✕</button>
+        </div>
+        <nav className="sb-nav">
+          {NAV.map(n=>(
+            <a key={n.key} href="#" className={page===n.key?"act":""} onClick={e=>{e.preventDefault();go(n.key)}}>
+              <svg className="sb-ic" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+                {n.key==="home"      && <><path d="M3 9.5L10 3l7 6.5V18a1 1 0 01-1 1H4a1 1 0 01-1-1z"/><path d="M8 18v-6h4v6"/></>}
+                {n.key==="collections"&&<><path d="M3 3h14l-1.5 9H4.5L3 3z"/><circle cx="8" cy="17" r="1"/><circle cx="14" cy="17" r="1"/></>}
+                {n.key==="pooja"     && <><path d="M10 2L4 8v10h12V8L10 2z"/><path d="M8 18v-5h4v5"/></>}
+                {n.key==="projects"  && <><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="11" y="2" width="7" height="7" rx="1"/><rect x="2" y="11" width="7" height="7" rx="1"/><rect x="11" y="11" width="7" height="7" rx="1"/></>}
+                {n.key==="about"     && <><circle cx="10" cy="6" r="3"/><path d="M4 18c0-3.31 2.69-6 6-6s6 2.69 6 6"/></>}
+                {n.key==="contact"   && <><path d="M2 4h16v12H2z"/><path d="M2 6l8 5 8-5"/></>}
+              </svg>
+              {n.label}
+            </a>
+          ))}
+          <div className="sb-div"/>
+          <a href={"tel:"+c.phone}>
+            <svg className="sb-ic" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 3h3.5l1.5 4-2 1.5a11 11 0 006.5 6.5L13 13l4 1.5V18c-8.3 0-15-6.7-15-15z"/></svg>
+            {c.phone}
+          </a>
+        </nav>
+        <div className="sb-ft">
+          <a href={`https://wa.me/${c.whatsapp}`} className="sb-btn" style={{background:"#25D366"}} target="_blank" rel="noopener noreferrer"><WaIc/> WhatsApp Us</a>
+          <button className="sb-btn" style={{background:"var(--gold)"}} onClick={()=>go("contact")}>Enquire Now</button>
+        </div>
+      </div>
+
+      {/* PAGE CONTENT */}
+      <div>{renderPage()}</div>
+      <Footer/>
+
+      {/* FLOATING BUTTONS */}
+      <div className="floats">
+        <a href={`https://wa.me/${c.whatsapp}`} className="fb fb-wa" target="_blank" rel="noopener noreferrer"><WaIc/></a>
+        <a href={"tel:"+c.phone} className="fb fb-ph"><PhIc s={20} c="white"/></a>
+      </div>
+
+      {/* ADMIN TRIGGER (tiny gear icon, bottom-left) */}
+      <button className="adm-btn" onClick={openAdmin}><GrIc/></button>
+
+      {/* ADMIN PANEL */}
+      {admOpen && (
+        <div className="adm-ov">
+          <div className="adm-panel">
+            <div className="adm-top">
+              <div>
+                <div className="adm-site">Mandir Emporium Admin</div>
+                <div className="adm-status">
+                  {CLOUD_OK ? (CDN_OK ? "☁️ Cloud + Cloudinary Active" : "☁️ Cloud Active · ⚠️ Cloudinary not set up") : "⚠️ JSONBin not configured — local save only"}
+                </div>
+              </div>
+              <div className="adm-acts">
+                <button className="adm-close" onClick={()=>{setAdmOpen(false);setAdmTab(null);setAuthed(false);setPass("");}}>Close</button>
+                {authed && (
+                  <button className="adm-save" onClick={save} disabled={saving}>
+                    {saving ? <><span className="spin"></span> Saving…</> : "Save & Publish"}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {!authed ? (
+              <div className="login">
+                <div className="login-logo">M</div>
+                <div className="login-t">Admin Login</div>
+                <div className="login-s">Enter your password to edit the website.<br/>Changes save to the cloud instantly.</div>
+                <div className="login-box">
+                  <input type="password" placeholder="Password" value={pass} onChange={e=>setPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&login()}/>
+                  <button className="login-btn" onClick={login}>Unlock Editor</button>
+                  {passErr && <div className="login-err">Incorrect password. Please try again.</div>}
+                </div>
+                <div className="login-hint">Default password: Deco@1955 (change this in the code)</div>
+              </div>
+            ) : admTab === null ? (
+              <>
+                <div style={{padding:".75rem 1rem",background:"#fff",borderBottom:"1px solid #e1e3e5"}}>
+                  {!CLOUD_OK && (
+                    <div className="setup">
+                      <strong>⚙️ Setup Required for Cloud Sync</strong>
+                      Open this HTML file and fill in your JSONBin Bin ID and API Key at the top of the file (CONFIG section). Until then, changes only save on this device.
+                    </div>
+                  )}
+                  {!CDN_OK && (
+                    <div className="setup" style={{marginBottom:0}}>
+                      <strong>⚙️ Setup Required for Cloud Images</strong>
+                      Fill in your Cloudinary Cloud Name and Upload Preset in the CONFIG section. Until then, images only show on this device.
+                    </div>
+                  )}
+                  {CLOUD_OK && CDN_OK && (
+                    <div style={{fontSize:".7rem",color:"#008060",fontWeight:600,display:"flex",alignItems:"center",gap:".4rem"}}>
+                      ✓ Cloud sync active — changes will be live on all devices after saving.
+                    </div>
+                  )}
+                </div>
+                <div className="adm-list">
+                  {SECTIONS.map((s,idx)=>
+                    s.group ? (
+                      <div key={idx} className="adm-grp">{s.group}</div>
+                    ) : (
+                      <div key={s.key} className="adm-row" onClick={()=>setAdmTab(s.key)}>
+                        <div className="adm-row-l">
+                          <div className="adm-ic">
+                            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+                              {s.key==="brand"       &&<><rect x="2" y="4" width="16" height="12" rx="1"/><path d="M2 8h16M6 12h4"/></>}
+                              {s.key==="favicon"     &&<><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M7 10h6M10 7v6"/></>}
+                              {s.key==="footer"      &&<><rect x="2" y="12" width="16" height="6" rx="1"/><path d="M2 8h16M2 4h10"/></>}
+                              {s.key==="homepage"    &&<><path d="M3 9.5L10 3l7 6.5V18a1 1 0 01-1 1H4a1 1 0 01-1-1z"/><path d="M8 18v-6h4v6"/></>}
+                              {s.key==="about"       &&<><circle cx="10" cy="6" r="3"/><path d="M4 18c0-3.31 2.69-6 6-6s6 2.69 6 6"/></>}
+                              {s.key==="collections" &&<><path d="M3 3h14l-1.5 9H4.5L3 3z"/><circle cx="8" cy="17" r="1"/><circle cx="14" cy="17" r="1"/></>}
+                              {s.key==="projects"    &&<><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="11" y="2" width="7" height="7" rx="1"/><rect x="2" y="11" width="7" height="7" rx="1"/><rect x="11" y="11" width="7" height="7" rx="1"/></>}
+                              {s.key==="pooja"       &&<><path d="M10 2L4 8v10h12V8L10 2z"/><path d="M8 18v-5h4v5"/></>}
+                              {s.key==="contact"     &&<><path d="M2 4h16v12H2z"/><path d="M2 6l8 5 8-5"/></>}
+                              {s.key==="why"         &&<><path d="M9 12l2 2 4-4M7 19H4a2 2 0 01-2-2V5a2 2 0 012-2h9l5 5v5"/></>}
+                            </svg>
+                          </div>
+                          <div><div className="adm-rn">{s.name}</div><div className="adm-rd">{s.desc}</div></div>
+                        </div>
+                        <ChR/>
+                      </div>
+                    )
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="adm-bc">
+                  <button className="adm-bc-btn" onClick={()=>setAdmTab(null)}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+                    &nbsp;Back
+                  </button>
+                  <span className="adm-bc-sep">›</span>
+                  <span className="adm-bc-cur">{SECTIONS.find(s=>s.key===admTab)?.name||admTab}</span>
+                </div>
+                <div className="adm-ed"><AdminEditor/></div>
+              </>
+            )}
+          </div>
+          <div className="adm-dismiss" onClick={()=>{setAdmOpen(false);setAdmTab(null);}}/>
+        </div>
+      )}
+
+      {/* TOAST NOTIFICATION */}
+      {toast && (
+        <div className={"toast "+(toast.type==="ok"?"toast-ok":"toast-er")}>{toast.msg}</div>
+      )}
+    </>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(React.createElement(App));
+</script>
+</body>
+</html>
